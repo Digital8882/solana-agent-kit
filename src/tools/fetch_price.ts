@@ -1,28 +1,28 @@
-import { PublicKey } from "@solana/web3.js";
+import { getTokenDataByTicker } from "./get_token_data";
+import { FetchPriceResponse } from "../types";
 
-/**
- * Fetch the price of a given token quoted in USDC using Jupiter API
- * @param tokenId The token mint address
- * @returns The price of the token quoted in USDC
- */
-export async function fetchPrice(tokenId: PublicKey): Promise<string> {
+export async function fetchPrice(ticker: string): Promise<FetchPriceResponse> {
   try {
-    const response = await fetch(`https://api.jup.ag/price/v2?ids=${tokenId}`);
+    const { tokenData, marketCap, volume24h } = await getTokenDataByTicker(ticker);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch price: ${response.statusText}`);
+    if (!tokenData) {
+      return {
+        status: "error",
+        message: `Token data not found for ${ticker}`,
+      };
     }
 
-    const data = await response.json();
-
-    const price = data.data[tokenId.toBase58()]?.price;
-
-    if (!price) {
-      throw new Error("Price data not available for the given token.");
-    }
-
-    return price;
+    return {
+      status: "success",
+      tokenData,
+      marketCap,
+      volume24h,
+      message: `${tokenData.name} (${tokenData.symbol}):\nMarket Cap: ${marketCap || 'N/A'}\n24h Volume: ${volume24h || 'N/A'}\nDaily Volume (Jupiter): $${tokenData.daily_volume.toLocaleString()}`
+    };
   } catch (error: any) {
-    throw new Error(`Price fetch failed: ${error.message}`);
+    return {
+      status: "error",
+      message: error.message,
+    };
   }
 }

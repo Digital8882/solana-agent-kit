@@ -72,8 +72,9 @@ export interface JupiterTokenData {
 
 export interface FetchPriceResponse {
   status: "success" | "error";
-  tokenId?: string;
-  priceInUSDC?: string;
+  tokenData?: JupiterTokenData;
+  marketCap?: string | null;
+  volume24h?: string | null;
   message?: string;
   code?: string;
 }

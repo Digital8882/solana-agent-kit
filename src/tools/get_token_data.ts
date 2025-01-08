@@ -28,7 +28,7 @@ export async function getTokenDataByAddress(
 
 export async function getTokenAddressFromTicker(
   ticker: string,
-): Promise<string | null> {
+): Promise<{ address: string | null; marketCap: string | null; volume24h: string | null }> {
   try {
     const response = await fetch(
       `https://api.dexscreener.com/latest/dex/search?q=${ticker}`,
@@ -36,7 +36,7 @@ export async function getTokenAddressFromTicker(
     const data = await response.json();
 
     if (!data.pairs || data.pairs.length === 0) {
-      return null;
+      return { address: null, marketCap: null, volume24h: null };
     }
 
     // Filter for Solana pairs only and sort by FDV
@@ -49,20 +49,29 @@ export async function getTokenAddressFromTicker(
         pair.baseToken.symbol.toLowerCase() === ticker.toLowerCase(),
     );
 
-    // Return the address of the highest FDV Solana pair
-    return solanaPairs[0].baseToken.address;
+    if (solanaPairs.length === 0) {
+      return { address: null, marketCap: null, volume24h: null };
+    }
+
+    const topPair = solanaPairs[0];
+    return {
+      address: topPair.baseToken.address,
+      marketCap: topPair.fdv ? `$${topPair.fdv.toLocaleString()}` : null,
+      volume24h: topPair.volume ? `$${topPair.volume.h24.toLocaleString()}` : null
+    };
   } catch (error) {
-    console.error("Error fetching token address from DexScreener:", error);
-    return null;
+    console.error("Error fetching token data from DexScreener:", error);
+    return { address: null, marketCap: null, volume24h: null };
   }
 }
 
 export async function getTokenDataByTicker(
   ticker: string,
-): Promise<JupiterTokenData | undefined> {
-  const address = await getTokenAddressFromTicker(ticker);
+): Promise<{ tokenData: JupiterTokenData | undefined; marketCap: string | null; volume24h: string | null }> {
+  const { address, marketCap, volume24h } = await getTokenAddressFromTicker(ticker);
   if (!address) {
     throw new Error(`Token address not found for ticker: ${ticker}`);
   }
-  return getTokenDataByAddress(new PublicKey(address));
+  const tokenData = await getTokenDataByAddress(new PublicKey(address));
+  return { tokenData, marketCap, volume24h };
 }

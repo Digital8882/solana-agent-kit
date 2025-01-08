@@ -44,6 +44,7 @@ import {
   MintCollectionNFTResponse,
   PumpfunLaunchResponse,
   PumpFunTokenOptions,
+  FetchPriceResponse,
 } from "../types";
 import { BN } from "@coral-xyz/anchor";
 
@@ -151,12 +152,12 @@ export class SolanaAgentKit {
 
   async getTokenDataByTicker(
     ticker: string,
-  ): Promise<JupiterTokenData | undefined> {
+  ): Promise<{ tokenData: JupiterTokenData | undefined; marketCap: string | null; volume24h: string | null }> {
     return getTokenDataByTicker(ticker);
   }
 
-  async fetchTokenPrice(mint: string) {
-    return fetchPrice(new PublicKey(mint));
+  async fetchTokenPrice(ticker: string): Promise<FetchPriceResponse> {
+    return fetchPrice(ticker);
   }
 
   async launchPumpFunToken(
